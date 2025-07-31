@@ -230,7 +230,21 @@ class Router
             throw new Exception("Controller {$controllerName} not found.", 404);
         }
 
-        $controllerInstance = new $controllerClass($this->request, $this->response);
+        $controllerInstance = new $controllerClass();
+        
+        // Injecter les dépendances après l'instanciation
+        if (method_exists($controllerInstance, 'setDependencies')) {
+            $controllerInstance->setDependencies($this->request, $this->response);
+        } else {
+            // Fallback pour les contrôleurs qui héritent de Controller
+            $reflection = new \ReflectionClass($controllerInstance);
+            $requestProperty = $reflection->getProperty('request');
+            $responseProperty = $reflection->getProperty('response');
+            $requestProperty->setAccessible(true);
+            $responseProperty->setAccessible(true);
+            $requestProperty->setValue($controllerInstance, $this->request);
+            $responseProperty->setValue($controllerInstance, $this->response);
+        }
 
         if (!method_exists($controllerInstance, $methodName)) {
             throw new Exception("Method {$methodName} not found in controller {$controllerName}.", 404);

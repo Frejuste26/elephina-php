@@ -3,10 +3,9 @@
 namespace App\Middleware;
 
 use Core\Middleware;
+use Core\Config;
+use Core\Logger;
 use Exception;
-// Si vous utilisez JWT, vous devrez inclure la bibliothèque ici
-// Par exemple: use Firebase\JWT\JWT;
-// use Firebase\JWT\Key; // Pour PHP-JWT v6 et plus
 
 /**
  * Middleware d'authentification.
@@ -28,6 +27,10 @@ class AuthMiddleware extends Middleware
 
         if (!$authorizationHeader) {
             // Si l'en-tête Authorization est manquant, renvoyer une erreur 401
+            Logger::warning("Missing Authorization header", [
+                'uri' => $this->request->getUri(),
+                'method' => $this->request->getMethod()
+            ]);
             $this->response->error('Accès non autorisé: Jeton d\'authentification manquant.', 401)->send();
             return; // Termine l'exécution du middleware et du script
         }
@@ -37,31 +40,144 @@ class AuthMiddleware extends Middleware
 
         if (strtolower($type) !== 'bearer' || empty($token)) {
             // Si le format du jeton est incorrect, renvoyer une erreur 401
+            Logger::warning("Invalid token format", [
+                'authorization_header' => $authorizationHeader
+            ]);
             $this->response->error('Accès non autorisé: Format de jeton invalide.', 401)->send();
             return;
         }
 
-        // --- Logique de validation du jeton (à implémenter) ---
-        // Cette partie dépendra de la bibliothèque JWT que vous utilisez (par exemple, firebase/php-jwt)
-        // et de votre secret pour les jetons.
-
-        // Exemple simplifié (vous devrez adapter ceci avec la vraie logique JWT):
+        // Validation du jeton
         try {
-            // Charger la clé secrète. En production, cette clé devrait être dans une variable d'environnement ou un fichier sécurisé.
-            // Pour l'exemple, nous allons la définir ici.
-            // $secretKey = 'your_super_secret_jwt_key'; // REMPLACEZ PAR UNE VRAIE CLÉ SECRÈTE !
+            if (!$this->validateToken($token)) {
+                Logger::warning("Invalid or expired token", ['token_preview' => substr($token, 0, 10) . '...']);
+                $this->response->error('Accès non autorisé: Jeton invalide ou expiré.', 401)->send();
+                return;
+            }
+            
+            Logger::info("Successful authentication", [
+                'uri' => $this->request->getUri(),
+                'method' => $this->request->getMethod()
+            ]);
+            
+        } catch (Exception $e) {
+            Logger::error("JWT validation error", [
+                'error' => $e->getMessage(),
+                'token_preview' => substr($token, 0, 10) . '...'
+            ]);
+            $this->response->error('Accès non autorisé: ' . $e->getMessage(), 401)->send();
+            return;
+        }
+    }
 
-            // Décoder le jeton. Ceci est un placeholder.
-            // Si vous utilisez firebase/php-jwt (v6+):
-            // $decoded = JWT::decode($token, new Key($secretKey, 'HS256'));
+    /**
+     * Valide un jeton JWT (version simplifiée pour la démo)
+     * En production, utilisez une vraie bibliothèque JWT comme firebase/php-jwt
+     *
+     * @param string $token Le jeton à valider
+     * @return bool True si le jeton est valide
+     */
+    protected function validateToken(string $token): bool
+    {
+        // Version simplifiée pour la démo
+        // En production, remplacez par une vraie validation JWT
+        $validTokens = [
+            'demo_token_123',
+            'test_token_456',
+            Config::get('JWT_SECRET', 'default_secret')
+        ];
+        
+        return in_array($token, $validTokens);
+        
+        // Exemple avec firebase/php-jwt (décommentez si vous l'installez):
+        /*
+        try {
+            $secretKey = Config::get('JWT_SECRET');
+            if (!$secretKey) {
+                throw new Exception('JWT secret not configured');
+            }
+            
+            $decoded = JWT::decode($token, new Key($secretKey, 'HS256'));
+            
+            // Vérifier l'expiration
+            if (isset($decoded->exp) && $decoded->exp < time()) {
+                return false;
+            }
+            
+            // Stocker les informations utilisateur si nécessaire
+            if (isset($decoded->user_id)) {
+                // $this->request->setUserId($decoded->user_id);
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            Logger::error("JWT decode error", ['error' => $e->getMessage()]);
+            return false;
+        }
+        */
+    }
+}
 
-            // Pour l'instant, simuler un jeton valide pour avancer.
-            // En production, vous feriez une vraie validation (signature, expiration, etc.).
-            if ($token === 'votre_token_secret_valide') {
-                // Jeton valide. Vous pouvez stocker des informations de l'utilisateur
-                // dans l'objet Request si nécessaire pour les contrôleurs.
-                // Par exemple: $this->request->setUserId($decoded->userId);
-                // Ou simplement laisser passer la requête.
+/**
+ * Classe utilitaire pour la gestion des JWT (exemple)
+ * En production, utilisez firebase/php-jwt
+ */
+class SimpleJWT
+{
+    /**
+     * Génère un jeton simple (pour les tests)
+     *
+     * @param array $payload Les données à encoder
+     * @param string $secret La clé secrète
+     * @return string Le jeton généré
+     */
+    public static function encode(array $payload, string $secret): string
+    {
+        $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
+        $payload = json_encode($payload);
+        
+        $base64Header = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($header));
+        $base64Payload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($payload));
+        
+        $signature = hash_hmac('sha256', $base64Header . "." . $base64Payload, $secret, true);
+        $base64Signature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
+        
+        return $base64Header . "." . $base64Payload . "." . $base64Signature;
+    }
+
+    /**
+     * Décode un jeton simple (pour les tests)
+     *
+     * @param string $token Le jeton à décoder
+     * @param string $secret La clé secrète
+     * @return array|null Les données décodées ou null si invalide
+     */
+    public static function decode(string $token, string $secret): ?array
+    {
+        $parts = explode('.', $token);
+        if (count($parts) !== 3) {
+            return null;
+        }
+        
+        list($base64Header, $base64Payload, $base64Signature) = $parts;
+        
+        $signature = hash_hmac('sha256', $base64Header . "." . $base64Payload, $secret, true);
+        $expectedSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
+        
+        if ($base64Signature !== $expectedSignature) {
+            return null;
+        }
+        
+        $payload = json_decode(base64_decode(str_replace(['-', '_'], ['+', '/'], $base64Payload)), true);
+        
+        // Vérifier l'expiration
+        if (isset($payload['exp']) && $payload['exp'] < time()) {
+            return null;
+        }
+        
+        return $payload;
+    }
+}
             } else {
                 // Jeton invalide ou expiré
                 $this->response->error('Accès non autorisé: Jeton invalide ou expiré.', 401)->send();

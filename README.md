@@ -116,6 +116,20 @@ Elephina/
        'password' => 'votre_mot_de_passe'
    ];
 
+6. Copiez le fichier de configuration d'environnement :
+
+   ```bash
+   cp App/Configs/.env.example App/Configs/.env
+
+7. Modifiez le fichier .env avec vos paramètres :
+
+   ```env
+   DB_HOST=localhost
+   DB_DATABASE=elephina
+   DB_USERNAME=votre_utilisateur
+   DB_PASSWORD=votre_mot_de_passe
+   JWT_SECRET=votre_cle_secrete_jwt_tres_longue_et_complexe
+
 
 ---
 
@@ -137,6 +151,16 @@ Elephina/
 ## 🧪 Tests API (via cURL)
 
    ```bash
+        # Inscription d'un utilisateur
+        curl -X POST -H "Content-Type: application/json" \
+        -d '{"username":"john","email":"john@example.com","password":"password123"}' \
+        http://localhost/auth/register
+
+        # Connexion
+        curl -X POST -H "Content-Type: application/json" \
+        -d '{"email":"john@example.com","password":"password123"}' \
+        http://localhost/auth/login
+
         # Liste des utilisateurs
         curl -H "Authorization: Bearer votre_token" http://localhost/users
 
@@ -145,13 +169,13 @@ Elephina/
 
         # Création d’un utilisateur
         curl -X POST -H "Content-Type: application/json" \
-        -d '{"name":"John","email":"john@example.com"}' \
+        -d '{"username":"john","email":"john@example.com","password":"password123"}' \
         http://localhost/users
 
         # Mise à jour
         curl -X PUT -H "Authorization: Bearer votre_token" \
         -H "Content-Type: application/json" \
-        -d '{"name":"John Updated"}' \
+        -d '{"username":"john_updated"}' \
         http://localhost/users/1
 
         # Suppression

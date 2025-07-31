@@ -16,6 +16,10 @@ use Core\Router;
 Router::get('/', 'HomeController@index');
 Router::get('/api', 'HomeController@index');
 
+// --- Routes d'authentification ---
+Router::post('/auth/login', 'AuthController@login');
+Router::post('/auth/register', 'AuthController@register');
+Router::post('/auth/logout', 'AuthController@logout', ['AuthMiddleware']);
 
 // --- Routes pour les utilisateurs (exemple tiré du README.md) ---
 

@@ -6,6 +6,8 @@ namespace Core;
 use Core\Router;
 use Core\Request;
 use Core\Response;
+use Core\Config;
+use Core\Logger;
 
 /**
  * Classe principale de l'application Elephina.
@@ -34,6 +36,12 @@ class App
      */
     public function __construct()
     {
+        // Charger la configuration
+        Config::load();
+        
+        // Initialiser le logger
+        Logger::init();
+        
         // Initialisation de l'objet Request pour analyser la requête HTTP actuelle
         $this->request = new Request();
         // Initialisation de l'objet Response pour construire les réponses HTTP
@@ -82,7 +90,12 @@ class App
      */
     public function handleException(\Throwable $exception): void
     {
-        error_log("Exception: " . $exception->getMessage() . " in " . $exception->getFile() . " on line " . $exception->getLine());
+        Logger::error("Unhandled exception", [
+            'message' => $exception->getMessage(),
+            'file' => $exception->getFile(),
+            'line' => $exception->getLine(),
+            'trace' => $exception->getTraceAsString()
+        ]);
 
         // Déterminer le code de statut HTTP approprié
         $statusCode = $exception->getCode() >= 100 && $exception->getCode() < 600 ? $exception->getCode() : 500;

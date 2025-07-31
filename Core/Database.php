@@ -73,7 +73,7 @@ class Database
             );
         } catch (PDOException $e) {
             // Log l'erreur et relance une exception plus générique pour éviter d'exposer les détails sensibles
-            error_log("Database connection failed: " . $e->getMessage());
+            Logger::error("Database connection failed", ['error' => $e->getMessage()]);
             throw new PDOException("Impossible de se connecter à la base de données. Veuillez vérifier vos paramètres de connexion.");
         }
     }

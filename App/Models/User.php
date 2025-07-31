@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Core\Model;
-use PDO
+use PDO;
 
 /**
  * Modèle User

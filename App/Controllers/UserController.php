@@ -30,6 +30,19 @@ class UserController extends Controller
     }
 
     /**
+     * Injecte les dépendances Request et Response.
+     * Appelée par le routeur après l'instanciation.
+     *
+     * @param Request $request
+     * @param Response $response
+     */
+    public function setDependencies(Request $request, Response $response): void
+    {
+        $this->request = $request;
+        $this->response = $response;
+    }
+
+    /**
      * Récupère tous les utilisateurs.
      * Accessible via GET /users.
      *

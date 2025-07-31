@@ -14,6 +14,11 @@ class Validator
     protected array $errors = [];
 
     /**
+     * @var array Données actuelles en cours de validation.
+     */
+    protected array $currentData = [];
+
+    /**
      * Valide un ensemble de données par rapport à un ensemble de règles.
      *
      * @param array $data Les données à valider (par exemple, $this->request->getBody()).
@@ -23,6 +28,7 @@ class Validator
     public function validate(array $data, array $rules): bool
     {
         $this->errors = []; // Réinitialiser les erreurs avant chaque validation
+        $this->currentData = $data; // Stocker les données pour les règles qui en ont besoin
 
         foreach ($rules as $field => $fieldRules) {
             // Sépare les règles par le caractère '|'
@@ -217,11 +223,13 @@ class Validator
      * @param string $field Le nom du champ.
      * @param mixed $value La valeur du champ.
      * @param string $param Le nom de l'autre champ ou la valeur à comparer.
-     * @param array $data Toutes les données originales (nécessaires pour comparer avec un autre champ).
      * @return bool
      */
-    protected function validateEquals(string $field, mixed $value, ?string $param, array $data): bool
+    protected function validateEquals(string $field, mixed $value, ?string $param): bool
     {
+        // Récupérer les données depuis la propriété de classe (à ajouter)
+        $data = $this->currentData ?? [];
+        
         // Si le paramètre est un autre champ (ex: 'password_confirmation')
         if (isset($data[$param])) {
             if ($value !== $data[$param]) {

@@ -1,2 +1,27 @@
+# Dépendances
 /vendor/
-.env
+composer.lock
+
+# Configuration
+App/Configs/.env
+
+# Logs
+logs/*.log
+logs/*.txt
+!logs/.gitkeep
+
+# Cache et temporaires
+*.tmp
+*.cache
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Système
+*.log
+error_log
