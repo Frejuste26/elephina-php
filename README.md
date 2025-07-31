@@ -46,6 +46,7 @@ Fonctionnalités
 ## 🧱 Architecture du Projet
 
 Le framework suit une architecture MVC simplifiée, optimisée pour les API REST :
+```bash
 Elephina/
 ├── Public/ # Point d'entrée (index.php, .htaccess)
 ├── App/
@@ -65,6 +66,7 @@ Elephina/
 │ └── Validator.php # Validation des champs
 ├── composer.json
 └── README.md
+```
 
 ---
 
